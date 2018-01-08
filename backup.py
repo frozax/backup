@@ -6,7 +6,8 @@ import sys
 from subprocess import call, Popen, PIPE
 import json
 
-sources = json.load(open("config.json", "rt"))["sources"]
+config_file = os.path.join(os.path.dirname(__file__), "config.json")
+sources = json.load(open(config_file, "rt"))["sources"]
 
 # read cmd line
 if len(sys.argv) > 1:
