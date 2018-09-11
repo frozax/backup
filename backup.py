@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import datetime
 from shutil import copy2
 import sys
 from subprocess import call, Popen, PIPE
@@ -43,8 +44,11 @@ def run_print_and_save_output(cmdline):
     return output, p.returncode
 
 
-def run_rsync(cmd_list, source, destination, bwlimit=0):
+def run_rsync(cmd_list, source, destination, bwlimit=0, timestamp=False):
     error = ""
+    if timestamp:
+        with open(os.path.join(source, "timestamp"), "wt") as timestamp_f:
+            timestamp_f.write(str(datetime.datetime.now()))
     string_cmd = " ".join(cmd_list + ["--bwlimit=%d" % bwlimit, source, destination])
     print "Running Rsync command: " + string_cmd
     ret_str, rc = run_print_and_save_output(string_cmd)
@@ -78,14 +82,16 @@ for i, s in enumerate(sources):
     some_files_were_added = False
     srcs = [source]
     dsts = [local_destination]
+    timestamps = [False]  # first rsync does not need to create timestamp file
     if "-ks1" in s[2:]:
         # copy from local
         srcs += [local_destination]
         dsts += ["ks1:backup/backup"]
-    for src, dst in zip(srcs, dsts):
+        timestamps.append(True)
+    for src, dst, timestamp in zip(srcs, dsts, timestamps):
         # bwlimit is internet upload (":" in destination)
         bwlimit = 60 if ":" in dst else 0
-        added_this_time = run_rsync(final_cmd, src, dst, bwlimit)
+        added_this_time = run_rsync(final_cmd, src, dst, bwlimit, timestamp)
         some_files_were_added = some_files_were_added or added_this_time
     # check for archiving
     dropbox = "-dropbox" in s[2:]
